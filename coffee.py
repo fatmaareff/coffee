@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # -----------------------------
-# 🎨 Style simple & propre
+# 🎨 Simple & clean style
 # -----------------------------
 st.markdown(
     """
@@ -79,7 +79,7 @@ st.markdown(
 # -----------------------------
 st.markdown("<h1 class='big-title'>THE COFFEE ADDICTION CURVE</h1>", unsafe_allow_html=True)
 st.markdown(
-    "<p class='subtitle'>Visualisation interactive de ton niveau d'énergie en fonction de ta dose quotidienne de café.</p>",
+    "<p class='subtitle'>Interactive visualization of your energy level throughout the day, based on how much coffee you drink.</p>",
     unsafe_allow_html=True
 )
 st.markdown("<div class='gradient-bar'></div>", unsafe_allow_html=True)
@@ -87,31 +87,32 @@ st.markdown("<div class='gradient-bar'></div>", unsafe_allow_html=True)
 # -----------------------------
 # SIDEBAR – user input
 # -----------------------------
-st.sidebar.title("⚙️ Paramètres")
+st.sidebar.title("⚙️ Settings")
 
 coffee_count = st.sidebar.slider(
-    "Nombre de cafés pris aujourd’hui",
+    "Number of coffees today",
     min_value=0,
     max_value=5,
     value=2
 )
 
-st.sidebar.caption("Hypothèse : 1er café à 8h, puis 10h, 14h, 16h et 20h.")
+st.sidebar.caption("Assumption: coffees at 8:00, 10:00, 14:00, 16:00 and 20:00.")
 
 # -----------------------------
 # Data Generator
 # -----------------------------
 def generate_energy_data(num: int) -> pd.DataFrame:
-    hours = ["6h","7h","8h","9h","10h","11h","12h","13h","14h",
-             "15h","16h","17h","18h","19h","20h","21h","22h"]
+    hours = ["6:00","7:00","8:00","9:00","10:00","11:00","12:00","13:00","14:00",
+             "15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"]
 
+    # Baseline energy curve (no coffee)
     base = [10,20,30,35,30,28,26,22,20,18,16,14,12,10,8,6,5]
     energy = base.copy()
 
     mood = ["😴"] * len(hours)
     status = ["Low"] * len(hours)
 
-    # COFFEE EFFECTS (ta logique d'origine)
+    # COFFEE EFFECTS
     if num >= 1:
         energy[2] = 85
         energy[3] = 95
@@ -150,14 +151,14 @@ def generate_energy_data(num: int) -> pd.DataFrame:
 
 df = generate_energy_data(coffee_count)
 
-# Heures “théoriques” des cafés (juste pour l’affichage sur la courbe)
+# Coffee times (for highlighting on the curve)
 def get_coffee_hours(num: int):
     lst = []
-    if num >= 1: lst.append("8h")
-    if num >= 2: lst.append("10h")
-    if num >= 3: lst.append("14h")
-    if num >= 4: lst.append("16h")
-    if num >= 5: lst.append("20h")
+    if num >= 1: lst.append("8:00")
+    if num >= 2: lst.append("10:00")
+    if num >= 3: lst.append("14:00")
+    if num >= 4: lst.append("16:00")
+    if num >= 5: lst.append("20:00")
     return lst
 
 coffee_hours = get_coffee_hours(coffee_count)
@@ -169,28 +170,28 @@ st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>🔍 Introduction</div>", unsafe_allow_html=True)
 st.markdown(
     """
-    Cette courbe représente **E(t)**, ton niveau d'énergie supposé tout au long de la journée :
+    This curve represents **E(t)**, your theoretical energy level over the day:
     
-    - une base d’énergie qui monte le matin puis redescend doucement le soir ;  
-    - chaque ☕ ajoute un **boost temporaire** au moment où tu le bois ;  
-    - plus tu bois de cafés, plus la courbe grimpe… mais pas forcément de façon très saine 😅.
+    - a natural baseline that rises in the morning and slowly decreases in the evening;  
+    - each ☕ adds a **temporary boost** at the time you drink it;  
+    - the more coffee you drink, the higher (and more chaotic) the curve becomes 😅.
     """
 )
 if coffee_hours:
-    st.markdown(f"Aujourd’hui, on suppose que tu as bu tes cafés vers : **{', '.join(coffee_hours)}**.")
+    st.markdown(f"Today, we assume you had your coffees at: **{', '.join(coffee_hours)}**.")
 else:
-    st.markdown("Aujourd’hui, aucun café : ta courbe repose uniquement sur ton énergie naturelle 😴.")
+    st.markdown("Today, you had no coffee: your curve depends only on your natural energy 😴.")
 st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
 # PLOTLY CURVE
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.markdown("<div class='section-title'>📈 Courbe d’énergie de la journée</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>📈 Daily Energy Curve</div>", unsafe_allow_html=True)
 
 fig = go.Figure()
 
-# Courbe principale
+# Main energy curve
 fig.add_trace(go.Scatter(
     x=df["Hour"],
     y=df["Energy"],
@@ -199,10 +200,10 @@ fig.add_trace(go.Scatter(
     marker=dict(size=10),
     text=df["Mood"],
     textposition="top center",
-    name="Énergie"
+    name="Energy"
 ))
 
-# Points spéciaux pour montrer quand les cafés sont pris
+# Highlight coffee moments
 if coffee_hours:
     coffee_y = [
         df.loc[df["Hour"] == h, "Energy"].values[0]
@@ -215,14 +216,14 @@ if coffee_hours:
         marker=dict(size=18, symbol="star", line=dict(width=2, color="white")),
         text=[f"☕ #{i+1}" for i in range(len(coffee_hours))],
         textposition="bottom center",
-        name="Cafés",
-        hovertemplate="Café %{text}<br>Heure : %{x}<br>Énergie : %{y}%<extra></extra>"
+        name="Coffees",
+        hovertemplate="Coffee %{text}<br>Time: %{x}<br>Energy: %{y}%<extra></extra>"
     ))
 
 fig.update_layout(
     template="plotly_dark",
-    yaxis=dict(range=[0, 110], title="Énergie (%)"),
-    xaxis=dict(title="Heure"),
+    yaxis=dict(range=[0, 110], title="Energy (%)"),
+    xaxis=dict(title="Time of day"),
     height=480,
     hovermode="x unified",
     margin=dict(l=20, r=20, t=10, b=40)
@@ -235,12 +236,12 @@ st.markdown("</div>", unsafe_allow_html=True)
 # Stats
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.markdown("<div class='section-title'>📊 Statistiques</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>📊 Key Statistics</div>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns(3)
-col1.metric("🔝 Pic d’énergie", f"{df['Energy'].max()}%")
+col1.metric("🔝 Peak energy", f"{df['Energy'].max()}%")
 col2.metric("🔻 Minimum", f"{df['Energy'].min()}%")
-col3.metric("⚡ Moyenne", f"{round(df['Energy'].mean(),1)}%")
+col3.metric("⚡ Average", f"{round(df['Energy'].mean(),1)}%")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -251,20 +252,21 @@ st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>🎯 Conclusion</div>", unsafe_allow_html=True)
 
 if coffee_count == 0:
-    message = "💀 Sans café : **mode zombie**, mais tu prouves que la volonté existe encore."
+    message = "💀 No coffee: pure zombie mode, but at least your heart is calm."
 elif coffee_count == 1:
-    message = "😴 Avec 1 café : **survie minimale**. Ça passe, mais évite les gros calculs."
+    message = "😴 With 1 coffee: basic survival mode. It works, but avoid heavy math."
 elif coffee_count == 2:
-    message = "✨ Avec 2 cafés : **zone de performance optimale**. Ton cerveau tourne en HD."
+    message = "✨ With 2 coffees: **optimal performance zone**. Your brain runs in HD."
 elif coffee_count == 3:
-    message = "⚠️ Avec 3 cafés : **très énergique**… productif·ve mais légèrement tremblant."
+    message = "⚠️ With 3 coffees: very energetic… productive, but slightly shaking."
 else:
-    message = "🚨 Beaucoup de cafés : **cœur = brrrrrrr ⚡🔥**. Ta courbe E(t) est au max, pense à l’eau demain."
+    message = "🚨 Many coffees: **heart = brrrrr ⚡🔥**. Your E(t) is maxed out, drink water tomorrow."
 
 st.write(message)
 st.markdown(
-    "<p class='footer-note'>📌 Basé sur des faits scientifiques totalement inventés… mais émotionnellement vrais 😂</p>",
+    "<p class='footer-note'>📌 Based on totally fake science… but emotionally very accurate 😂</p>",
     unsafe_allow_html=True
 )
 st.markdown("</div>", unsafe_allow_html=True)
+
 
