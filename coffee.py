@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import os 
 
 # -----------------------------
 # Page Config
@@ -161,16 +160,6 @@ st.markdown(
         border: 1px solid rgba(212, 165, 116, 0.15);
     }
     
-    .author-photo {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #d4a574;
-        margin-bottom: 0.8rem;
-        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.4);
-    }
-    
     .author-name {
         font-size: 1.1rem;
         font-weight: 600;
@@ -184,19 +173,6 @@ st.markdown(
         opacity: 0.7;
         margin-top: 0.2rem;
     }
-    
-    .stSlider > div > div > div {
-        background: linear-gradient(90deg, #8b4513, #d4a574);
-    }
-    
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a0d08 0%, #2d1810 100%);
-    }
-    
-    [data-testid="stSidebar"] .element-container {
-        color: #f4e4c1;
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -209,165 +185,146 @@ st.markdown(
     """
     <div class='hero-section'>
         <div class='coffee-icon'>☕</div>
-        <h1 class='big-title'>The Coffee Addiction Curve</h1>
-        <p class='subtitle'>Because our energy doesn't follow a straight line.<br>It moves with our habits, our moods... and our caffeine.</p>
+        <h1 class='big-title'>My Daily Energy Curve</h1>
+        <p class='subtitle'>A data-driven analysis of how caffeine impacts my productivity throughout the day</p>
     </div>
     """,
     unsafe_allow_html=True
 )
 
 # -----------------------------
-# SIDEBAR – user input
+# Data Generator - Fixed 2 coffees at 7:30 and 14:00
 # -----------------------------
-st.sidebar.markdown("### ⚙️ Control Panel")
-st.sidebar.markdown("---")
+def generate_energy_data() -> pd.DataFrame:
+    hours = ["6:00", "6:30", "7:00", "7:30", "8:00", "8:30", "9:00", "9:30", "10:00", "10:30",
+             "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", 
+             "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", 
+             "20:00", "20:30", "21:00", "21:30", "22:00"]
 
-coffee_count = st.sidebar.slider(
-    "☕ Number of coffees today",
-    min_value=0,
-    max_value=5,
-    value=2,
-    help="Adjust to see how coffee impacts your energy curve"
-)
+    # Realistic energy curve with 2 coffees - second coffee less effective
+    energy = [
+        12,  # 6:00 - Just waking up
+        15,  # 6:30 - Getting up
+        20,  # 7:00 - Morning routine
+        25,  # 7:30 - ☕ FIRST COFFEE
+        45,  # 8:00 - Coffee kicking in
+        70,  # 8:30 - Rising energy
+        85,  # 9:00 - Peak productivity
+        82,  # 9:30 - Sustained high
+        78,  # 10:00 - Still good
+        72,  # 10:30 - Gradual decline
+        68,  # 11:00 - Mid-morning
+        65,  # 11:30 - Pre-lunch
+        60,  # 12:00 - Lunch time
+        55,  # 12:30 - Post-lunch dip starting
+        48,  # 13:00 - Afternoon slump
+        42,  # 13:30 - Energy low
+        38,  # 14:00 - ☕ SECOND COFFEE
+        50,  # 14:30 - Coffee effect starting (less boost)
+        62,  # 15:00 - Energy rising (lower than morning)
+        68,  # 15:30 - Second peak (significantly lower)
+        70,  # 16:00 - Afternoon peak (max 70% vs 85%)
+        67,  # 16:30 - Slight decline
+        63,  # 17:00 - Gradual decline
+        58,  # 17:30 - Energy dropping
+        52,  # 18:00 - End of workday
+        45,  # 18:30 - Evening transition
+        38,  # 19:00 - Relaxing
+        32,  # 19:30 - Winding down
+        28,  # 20:00 - Evening
+        24,  # 20:30 - Getting tired
+        20,  # 21:00 - Preparing for bed
+        17,  # 21:30 - Very tired
+        15   # 22:00 - Ready to sleep
+    ]
 
-st.sidebar.markdown("---")
-st.sidebar.caption("📅 **Assumption:** Coffees consumed at 8:00, 10:00, 14:00, 16:00 and 20:00.")
-st.sidebar.markdown("---")
-st.sidebar.info("💡 **Tip:** The optimal zone is typically 2-3 coffees per day for sustained productivity.")
-
-# -----------------------------
-# Data Generator
-# -----------------------------
-def generate_energy_data(num: int) -> pd.DataFrame:
-    hours = ["6:00","7:00","8:00","9:00","10:00","11:00","12:00","13:00","14:00",
-             "15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"]
-
-    base = [10,20,30,35,30,28,26,22,20,18,16,14,12,10,8,6,5]
-    energy = base.copy()
-
-    mood = ["😴"] * len(hours)
-    status = ["Low"] * len(hours)
-
-    if num >= 1:
-        energy[2] = 85
-        energy[3] = 95
-        energy[4] = 80
-        mood[3] = "🚀"
-        status[3] = "1st Coffee Boost"
-
-    if num >= 2:
-        energy[8] = 60
-        energy[9] = 90
-        energy[10] = 85
-        mood[9] = "😎"
-        status[9] = "2nd Coffee Boost"
-
-    if num >= 3:
-        energy[12] = 92
-        mood[12] = "💥"
-        status[12] = "3rd Coffee Boost"
-
-    if num >= 4:
-        energy[14] = 95
-        mood[14] = "🔥"
-        status[14] = "Overcaffeinated"
-
-    if num == 5:
-        energy[15] = 98
-        mood[15] = "⚡"
-        status[15] = "MAX POWER"
+    # Minimal markers - professional presentation
+    mood = [""] * len(energy)
+    
+    # Only mark coffee moments
+    mood[3] = "☕"   # 7:30 - First coffee
+    mood[16] = "☕"  # 14:00 - Second coffee
 
     return pd.DataFrame({
         "Hour": hours,
         "Energy": energy,
-        "Mood": mood,
-        "Status": status
+        "Mood": mood
     })
 
-df = generate_energy_data(coffee_count)
+df = generate_energy_data()
 
-def get_coffee_hours(num: int):
-    lst = []
-    if num >= 1: lst.append("8:00")
-    if num >= 2: lst.append("10:00")
-    if num >= 3: lst.append("14:00")
-    if num >= 4: lst.append("16:00")
-    if num >= 5: lst.append("20:00")
-    return lst
-
-coffee_hours = get_coffee_hours(coffee_count)
+# Coffee moments
+coffee_hours = ["7:30", "14:00"]
 
 # -----------------------------
-# PLOTLY CURVE (Direct - No intro, no side images)
+# PLOTLY CURVE
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>📈 Daily Energy Curve</div>", unsafe_allow_html=True)
 
 fig = go.Figure()
 
-# Main energy curve with gradient effect
+# Main energy curve
 fig.add_trace(go.Scatter(
     x=df["Hour"],
     y=df["Energy"],
     mode="lines+markers+text",
     line=dict(width=4, color='#d4a574', shape='spline'),
-    marker=dict(size=12, color='#8b4513', line=dict(width=2, color='#f4e4c1')),
+    marker=dict(size=10, color='#8b4513', line=dict(width=2, color='#f4e4c1')),
     text=df["Mood"],
     textposition="top center",
-    textfont=dict(size=16),
-    name="Energy",
+    textfont=dict(size=14),
+    name="Energy Level",
     hovertemplate="<b>%{x}</b><br>Energy: %{y}%<extra></extra>"
 ))
 
 # Highlight coffee moments
-if coffee_hours:
-    coffee_y = [
-        df.loc[df["Hour"] == h, "Energy"].values[0]
-        for h in coffee_hours
-    ]
-    fig.add_trace(go.Scatter(
-        x=coffee_hours,
-        y=coffee_y,
-        mode="markers+text",
-        marker=dict(size=22, symbol="star", color='#FFD700', line=dict(width=3, color='#8b4513')),
-        text=[f"☕ #{i+1}" for i in range(len(coffee_hours))],
-        textposition="bottom center",
-        textfont=dict(size=12, color='#FFD700'),
-        name="Coffee Moments",
-        hovertemplate="<b>Coffee %{text}</b><br>Time: %{x}<br>Energy: %{y}%<extra></extra>"
-    ))
+coffee_y = [df.loc[df["Hour"] == h, "Energy"].values[0] for h in coffee_hours]
+fig.add_trace(go.Scatter(
+    x=coffee_hours,
+    y=coffee_y,
+    mode="markers+text",
+    marker=dict(size=24, symbol="star", color='#FFD700', line=dict(width=3, color='#8b4513')),
+    text=["☕ Morning", "☕ Afternoon"],
+    textposition="bottom center",
+    textfont=dict(size=13, color='#FFD700', family='Poppins'),
+    name="Coffee Moments",
+    hovertemplate="<b>%{text}</b><br>Time: %{x}<br>Energy: %{y}%<extra></extra>"
+))
 
 fig.update_layout(
     template="plotly_dark",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0.3)',
     yaxis=dict(
-        range=[0, 110],
+        range=[0, 100],
         title="Energy Level (%)",
         gridcolor='rgba(212, 165, 116, 0.1)',
-        tickfont=dict(color='#f4e4c1')
+        tickfont=dict(color='#f4e4c1', size=12)
     ),
     xaxis=dict(
         title="Time of Day",
         gridcolor='rgba(212, 165, 116, 0.1)',
-        tickfont=dict(color='#f4e4c1')
+        tickfont=dict(color='#f4e4c1', size=11),
+        tickangle=-45
     ),
-    height=500,
+    height=550,
     hovermode="x unified",
-    margin=dict(l=20, r=20, t=20, b=40),
-    font=dict(color='#f4e4c1')
+    margin=dict(l=20, r=20, t=20, b=80),
+    font=dict(color='#f4e4c1', family='Poppins'),
+    showlegend=False
 )
 
 st.plotly_chart(fig, use_container_width=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
-# Stats (Enhanced)
+# Stats
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>📊 Key Performance Metrics</div>", unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
@@ -376,59 +333,56 @@ with col1:
 
 with col2:
     st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-    st.metric("🔻 Minimum Level", f"{df['Energy'].min()}%")
+    st.metric("⚡ Average", f"{round(df['Energy'].mean(),1)}%")
     st.markdown("</div>", unsafe_allow_html=True)
 
 with col3:
     st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-    st.metric("⚡ Average", f"{round(df['Energy'].mean(),1)}%")
+    st.metric("☕ Daily Coffees", "2")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with col4:
+    st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
+    st.metric("⏰ Coffee Times", "7:30 & 14:00")
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
-# Conclusion (Enhanced)
+# Analysis
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.markdown("<div class='section-title'>🎯 Performance Analysis</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>🎯 Key Insights</div>", unsafe_allow_html=True)
 
-if coffee_count == 0:
-    message = "💀 **Zero Coffee Mode:** You look like an old laptop that needs to be plugged in. Energy at 10%. Pure survival instinct."
-    emoji = "😴"
-elif coffee_count == 1:
-    message = "🚀 **First Coffee Boost:** The magic moment! Energy jumps from 😴 to 🚀 instantly. That's what we call the awakening."
-    emoji = "🚀"
-elif coffee_count == 2:
-    message = "😎 **The Sweet Spot:** Not because you want to... Because your soul needs it. Peak performance achieved. This is where magic happens."
-    emoji = "✨"
-elif coffee_count == 3:
-    message = "💥 **The Midday Warrior:** Three coffees in. You've survived the famous 2 p.m. crash. The curve is beautiful and powerful."
-    emoji = "💥"
-elif coffee_count == 4:
-    message = "🔥 **Entering the Overcaffeinated Zone:** Energy 100% • Hands shaking • Heart doing TikTok dances • Brain: 'Let's reorganize the house at 9 p.m.'"
-    emoji = "🔥"
-else:
-    message = "⚡ **Maximum Chaos Mode:** The curve is now a chaotic mountain range. You're not tired... you've transcended tiredness."
-    emoji = "⚡"
-
-st.markdown(f"### {emoji} {message}")
-st.markdown("---")
 st.markdown(
     """
-    ### 💭 The Real Truth
+    ### ☕ The Two-Coffee Strategy
     
-    This curve is funny... but it shows something real:
+    My daily routine follows a scientifically-backed approach to caffeine consumption:
     
-    **Our energy doesn't follow a straight line.** It moves with our habits, our moods, and yes... our caffeine.
+    **Morning Coffee (7:30 AM):**
+    - Consumed 30-60 minutes after waking up (avoiding cortisol spike)
+    - Creates a strong energy boost from ~25% to 85% by 9:00 AM
+    - Sustains high productivity through the entire morning
     
-    We're all riding our own energy curves every day. The question is: *Are you aware of yours?*
+    **Afternoon Coffee (14:00):**
+    - Strategically timed to combat the post-lunch energy dip
+    - Prevents the typical 2 PM crash
+    - **Lower effectiveness due to caffeine tolerance** - reaches only 70% vs morning's 85%
+    - More modest boost reflects biological reality of afternoon caffeine response
+    - Consumed early enough to avoid sleep disruption
+    
+    ### 📈 Performance Pattern
+    
+    This two-coffee approach creates **two distinct productivity peaks** with realistic expectations:
+    - **Morning Peak (9:00-10:00):** 82-85% energy - ideal for deep, focused work
+    - **Afternoon Peak (16:00):** 70% energy - suitable for lighter tasks and collaboration
+    
+    The curve demonstrates sustainable energy management, showing the natural decline in caffeine effectiveness throughout the day without the crashes that come from overcaffeination.
     """,
     unsafe_allow_html=True
 )
-st.markdown(
-    "<p class='footer-note'>📌 Based on real coffee addiction and totally legitimate self-observation research ☕😂</p>",
-    unsafe_allow_html=True
-)
+
 st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
@@ -438,7 +392,7 @@ st.markdown("<div class='author-section'>", unsafe_allow_html=True)
 
 st.markdown(
     """
-    <p class='author-label'>MADE BY</p>
+    <p class='author-label'>PRESENTED BY</p>
     <p class='author-name'>MOHAMED BOUSSOFFARA</p>
     """,
     unsafe_allow_html=True
