@@ -298,47 +298,10 @@ def get_coffee_hours(num: int):
 coffee_hours = get_coffee_hours(coffee_count)
 
 # -----------------------------
-# INTRO
-# -----------------------------
-st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.markdown("<div class='section-title'>🔍 Understanding Your Energy Curve</div>", unsafe_allow_html=True)
-st.markdown(
-    """
-    This curve represents **E(t)**, your theoretical energy level over the day:
-    
-    - A **natural baseline** that rises in the morning and gradually decreases in the evening  
-    - Each ☕ adds a **temporary boost** at the time you drink it  
-    - The more coffee consumed, the higher (and more dynamic) the curve becomes 😅
-    """
-)
-if coffee_hours:
-    st.markdown(f"**Today's coffee schedule:** {', '.join(coffee_hours)}")
-else:
-    st.markdown("**Today:** No coffee — your curve reflects natural energy patterns 😴")
-st.markdown("</div>", unsafe_allow_html=True)
-
-# -----------------------------
-# PLOTLY CURVE (Enhanced)
+# PLOTLY CURVE (Direct - No intro, no side images)
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>📈 Daily Energy Curve</div>", unsafe_allow_html=True)
-
-# Display personal photos based on coffee count
-col_left, col_center, col_right = st.columns([1, 2, 1])
-
-with col_left:
-    # Show sad/tired photo when no coffee or low energy
-    if coffee_count <= 1 and os.path.exists("photo_tired.jpg"):
-        st.image("photo_tired.jpg", caption="Without coffee 😴", use_container_width=True)
-    elif coffee_count <= 1 and os.path.exists("photo_tired.png"):
-        st.image("photo_tired.png", caption="Without coffee 😴", use_container_width=True)
-
-with col_right:
-    # Show happy photo when drinking coffee
-    if coffee_count >= 2 and os.path.exists("photo_happy.jpg"):
-        st.image("photo_happy.jpg", caption="With coffee! 🚀☕", use_container_width=True)
-    elif coffee_count >= 2 and os.path.exists("photo_happy.png"):
-        st.image("photo_happy.png", caption="With coffee! 🚀☕", use_container_width=True)
 
 fig = go.Figure()
 
@@ -474,12 +437,6 @@ st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("<div class='author-section'>", unsafe_allow_html=True)
 
 # Try to load profile photo, if it exists
-import os
-if os.path.exists("profile.jpg"):
-    st.image("profile.jpg", width=80, use_container_width=False)
-elif os.path.exists("profile.png"):
-    st.image("profile.png", width=80, use_container_width=False)
-
 st.markdown(
     """
     <p class='author-label'>MADE BY</p>
@@ -488,5 +445,4 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown("</div>", unsafe_allow_html=True)
-
 
