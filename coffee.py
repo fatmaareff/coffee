@@ -436,7 +436,6 @@ st.markdown("</div>", unsafe_allow_html=True)
 # -----------------------------
 st.markdown("<div class='author-section'>", unsafe_allow_html=True)
 
-# Try to load profile photo, if it exists
 st.markdown(
     """
     <p class='author-label'>MADE BY</p>
