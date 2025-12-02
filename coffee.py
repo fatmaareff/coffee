@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import os
+import base64
+from io import BytesIO
+from PIL import Image
 
 # -----------------------------
 # Page Config
@@ -151,6 +155,39 @@ st.markdown(
         color: #d4a574;
     }
     
+    .author-section {
+        text-align: center;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(101, 67, 33, 0.05) 100%);
+        border-radius: 20px;
+        border: 1px solid rgba(212, 165, 116, 0.15);
+    }
+    
+    .author-photo {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #d4a574;
+        margin-bottom: 0.8rem;
+        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.4);
+    }
+    
+    .author-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #d4a574;
+        margin: 0;
+    }
+    
+    .author-label {
+        font-size: 0.85rem;
+        color: #e5e7eb;
+        opacity: 0.7;
+        margin-top: 0.2rem;
+    }
+    
     .stSlider > div > div > div {
         background: linear-gradient(90deg, #8b4513, #d4a574);
     }
@@ -183,6 +220,30 @@ st.markdown(
 )
 
 # -----------------------------
+# Image to Base64 Converter for Plotly
+# -----------------------------
+def image_to_base64_url(image_path, size=(40, 40)):
+    """Convert image to base64 URL for Plotly"""
+    try:
+        if os.path.exists(image_path):
+            img = Image.open(image_path)
+            img = img.resize(size, Image.Resampling.LANCZOS)
+            
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            return f"data:image/png;base64,{img_str}"
+        return None
+    except Exception as e:
+        st.warning(f"Erreur lors du chargement de {image_path}: {e}")
+        return None
+
+# Load images
+tired_img_url = image_to_base64_url("photo_tired.jpg") or image_to_base64_url("photo_tired.png")
+happy_img_url = image_to_base64_url("photo_happy.jpg") or image_to_base64_url("photo_happy.png")
+
+# -----------------------------
 # SIDEBAR – user input
 # -----------------------------
 st.sidebar.markdown("### ⚙️ Control Panel")
@@ -212,6 +273,7 @@ def generate_energy_data(num: int) -> pd.DataFrame:
     energy = base.copy()
 
     mood = ["😴"] * len(hours)
+    mood_type = ["tired"] * len(hours)  # New: to track which image to use
     status = ["Low"] * len(hours)
 
     if num >= 1:
@@ -219,6 +281,7 @@ def generate_energy_data(num: int) -> pd.DataFrame:
         energy[3] = 95
         energy[4] = 80
         mood[3] = "🚀"
+        mood_type[3] = "happy"
         status[3] = "1st Coffee Boost"
 
     if num >= 2:
@@ -226,27 +289,32 @@ def generate_energy_data(num: int) -> pd.DataFrame:
         energy[9] = 90
         energy[10] = 85
         mood[9] = "😎"
+        mood_type[9] = "happy"
         status[9] = "2nd Coffee Boost"
 
     if num >= 3:
         energy[12] = 92
         mood[12] = "💥"
+        mood_type[12] = "happy"
         status[12] = "3rd Coffee Boost"
 
     if num >= 4:
         energy[14] = 95
         mood[14] = "🔥"
+        mood_type[14] = "happy"
         status[14] = "Overcaffeinated"
 
     if num == 5:
         energy[15] = 98
         mood[15] = "⚡"
+        mood_type[15] = "happy"
         status[15] = "MAX POWER"
 
     return pd.DataFrame({
         "Hour": hours,
         "Energy": energy,
         "Mood": mood,
+        "MoodType": mood_type,
         "Status": status
     })
 
@@ -284,26 +352,76 @@ else:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
-# PLOTLY CURVE (Enhanced)
+# PLOTLY CURVE (Enhanced with Personal Photos)
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>📈 Daily Energy Curve</div>", unsafe_allow_html=True)
 
+# Display personal photos based on coffee count
+col_left, col_center, col_right = st.columns([1, 2, 1])
+
+with col_left:
+    # Show sad/tired photo when no coffee or low energy
+    if coffee_count <= 1 and os.path.exists("photo_tired.jpg"):
+        st.image("photo_tired.jpg", caption="Without coffee 😴", use_container_width=True)
+    elif coffee_count <= 1 and os.path.exists("photo_tired.png"):
+        st.image("photo_tired.png", caption="Without coffee 😴", use_container_width=True)
+
+with col_right:
+    # Show happy photo when drinking coffee
+    if coffee_count >= 2 and os.path.exists("photo_happy.jpg"):
+        st.image("photo_happy.jpg", caption="With coffee! 🚀☕", use_container_width=True)
+    elif coffee_count >= 2 and os.path.exists("photo_happy.png"):
+        st.image("photo_happy.png", caption="With coffee! 🚀☕", use_container_width=True)
+
 fig = go.Figure()
 
-# Main energy curve with gradient effect
+# Main energy curve
 fig.add_trace(go.Scatter(
     x=df["Hour"],
     y=df["Energy"],
-    mode="lines+markers+text",
+    mode="lines+markers",
     line=dict(width=4, color='#d4a574', shape='spline'),
     marker=dict(size=12, color='#8b4513', line=dict(width=2, color='#f4e4c1')),
-    text=df["Mood"],
-    textposition="top center",
-    textfont=dict(size=16),
     name="Energy",
     hovertemplate="<b>%{x}</b><br>Energy: %{y}%<extra></extra>"
 ))
+
+# Add images or emojis as annotations on key points
+if tired_img_url and happy_img_url:
+    # Use images - add them for all points
+    for idx, row in df.iterrows():
+        img_url = happy_img_url if row["MoodType"] == "happy" else tired_img_url
+        
+        fig.add_layout_image(
+            dict(
+                source=img_url,
+                xref="x",
+                yref="y",
+                x=row["Hour"],
+                y=row["Energy"] + 8,  # Position above the point
+                sizex=1.2,  # Width in x-axis units
+                sizey=12,   # Height in y-axis units
+                xanchor="center",
+                yanchor="bottom",
+                layer="above",
+                opacity=0.9
+            )
+        )
+    st.info("✅ Photos personnelles chargées avec succès!")
+else:
+    # Fallback to emojis if images not available
+    fig.add_trace(go.Scatter(
+        x=df["Hour"],
+        y=df["Energy"],
+        mode="text",
+        text=df["Mood"],
+        textposition="top center",
+        textfont=dict(size=16),
+        showlegend=False,
+        hoverinfo="skip"
+    ))
+    st.warning("⚠️ Photos non trouvées. Utilisation des emojis. Assure-toi d'avoir photo_tired.jpg et photo_happy.jpg dans le dossier.")
 
 # Highlight coffee moments
 if coffee_hours:
@@ -413,6 +531,26 @@ st.markdown(
 )
 st.markdown(
     "<p class='footer-note'>📌 Based on real coffee addiction and totally legitimate self-observation research ☕😂</p>",
+    unsafe_allow_html=True
+)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# -----------------------------
+# Author Section
+# -----------------------------
+st.markdown("<div class='author-section'>", unsafe_allow_html=True)
+
+# Try to load profile photo, if it exists
+if os.path.exists("profile.jpg"):
+    st.image("profile.jpg", width=80, use_container_width=False)
+elif os.path.exists("profile.png"):
+    st.image("profile.png", width=80, use_container_width=False)
+
+st.markdown(
+    """
+    <p class='author-label'>MADE BY</p>
+    <p class='author-name'>MOHAMED BOUSSOFFARA</p>
+    """,
     unsafe_allow_html=True
 )
 st.markdown("</div>", unsafe_allow_html=True)
