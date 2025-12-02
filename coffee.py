@@ -387,28 +387,27 @@ fig.add_trace(go.Scatter(
     hovertemplate="<b>%{x}</b><br>Energy: %{y}%<extra></extra>"
 ))
 
-# Add images or emojis as annotations on key points
+# Add images as annotations on key points
 if tired_img_url and happy_img_url:
-    # Use images - add them for all points
     for idx, row in df.iterrows():
-        img_url = happy_img_url if row["MoodType"] == "happy" else tired_img_url
-        
-        fig.add_layout_image(
-            dict(
-                source=img_url,
-                xref="x",
-                yref="y",
-                x=row["Hour"],
-                y=row["Energy"] + 8,  # Position above the point
-                sizex=1.2,  # Width in x-axis units
-                sizey=12,   # Height in y-axis units
-                xanchor="center",
-                yanchor="bottom",
-                layer="above",
-                opacity=0.9
+        # Only show images at specific intervals to avoid clutter
+        if idx % 3 == 0 or row["MoodType"] == "happy":
+            img_url = happy_img_url if row["MoodType"] == "happy" else tired_img_url
+            
+            fig.add_layout_image(
+                dict(
+                    source=img_url,
+                    xref="x",
+                    yref="y",
+                    x=row["Hour"],
+                    y=row["Energy"],
+                    sizex=0.8,
+                    sizey=10,
+                    xanchor="center",
+                    yanchor="middle",
+                    layer="above"
+                )
             )
-        )
-    st.info("✅ Photos personnelles chargées avec succès!")
 else:
     # Fallback to emojis if images not available
     fig.add_trace(go.Scatter(
@@ -421,7 +420,6 @@ else:
         showlegend=False,
         hoverinfo="skip"
     ))
-    st.warning("⚠️ Photos non trouvées. Utilisation des emojis. Assure-toi d'avoir photo_tired.jpg et photo_happy.jpg dans le dossier.")
 
 # Highlight coffee moments
 if coffee_hours:
