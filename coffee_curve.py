@@ -1,10 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import os
-import base64
-from io import BytesIO
-from PIL import Image
+import os 
 
 # -----------------------------
 # Page Config
@@ -220,30 +217,6 @@ st.markdown(
 )
 
 # -----------------------------
-# Image to Base64 Converter for Plotly
-# -----------------------------
-def image_to_base64_url(image_path, size=(40, 40)):
-    """Convert image to base64 URL for Plotly"""
-    try:
-        if os.path.exists(image_path):
-            img = Image.open(image_path)
-            img = img.resize(size, Image.Resampling.LANCZOS)
-            
-            buffered = BytesIO()
-            img.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            return f"data:image/png;base64,{img_str}"
-        return None
-    except Exception as e:
-        st.warning(f"Erreur lors du chargement de {image_path}: {e}")
-        return None
-
-# Load images
-tired_img_url = image_to_base64_url("photo_tired.jpg") or image_to_base64_url("photo_tired.png")
-happy_img_url = image_to_base64_url("photo_happy.jpg") or image_to_base64_url("photo_happy.png")
-
-# -----------------------------
 # SIDEBAR – user input
 # -----------------------------
 st.sidebar.markdown("### ⚙️ Control Panel")
@@ -273,7 +246,6 @@ def generate_energy_data(num: int) -> pd.DataFrame:
     energy = base.copy()
 
     mood = ["😴"] * len(hours)
-    mood_type = ["tired"] * len(hours)  # New: to track which image to use
     status = ["Low"] * len(hours)
 
     if num >= 1:
@@ -281,7 +253,6 @@ def generate_energy_data(num: int) -> pd.DataFrame:
         energy[3] = 95
         energy[4] = 80
         mood[3] = "🚀"
-        mood_type[3] = "happy"
         status[3] = "1st Coffee Boost"
 
     if num >= 2:
@@ -289,32 +260,27 @@ def generate_energy_data(num: int) -> pd.DataFrame:
         energy[9] = 90
         energy[10] = 85
         mood[9] = "😎"
-        mood_type[9] = "happy"
         status[9] = "2nd Coffee Boost"
 
     if num >= 3:
         energy[12] = 92
         mood[12] = "💥"
-        mood_type[12] = "happy"
         status[12] = "3rd Coffee Boost"
 
     if num >= 4:
         energy[14] = 95
         mood[14] = "🔥"
-        mood_type[14] = "happy"
         status[14] = "Overcaffeinated"
 
     if num == 5:
         energy[15] = 98
         mood[15] = "⚡"
-        mood_type[15] = "happy"
         status[15] = "MAX POWER"
 
     return pd.DataFrame({
         "Hour": hours,
         "Energy": energy,
         "Mood": mood,
-        "MoodType": mood_type,
         "Status": status
     })
 
@@ -332,94 +298,26 @@ def get_coffee_hours(num: int):
 coffee_hours = get_coffee_hours(coffee_count)
 
 # -----------------------------
-# INTRO
-# -----------------------------
-st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.markdown("<div class='section-title'>🔍 Understanding Your Energy Curve</div>", unsafe_allow_html=True)
-st.markdown(
-    """
-    This curve represents **E(t)**, your theoretical energy level over the day:
-    
-    - A **natural baseline** that rises in the morning and gradually decreases in the evening  
-    - Each ☕ adds a **temporary boost** at the time you drink it  
-    - The more coffee consumed, the higher (and more dynamic) the curve becomes 😅
-    """
-)
-if coffee_hours:
-    st.markdown(f"**Today's coffee schedule:** {', '.join(coffee_hours)}")
-else:
-    st.markdown("**Today:** No coffee — your curve reflects natural energy patterns 😴")
-st.markdown("</div>", unsafe_allow_html=True)
-
-# -----------------------------
-# PLOTLY CURVE (Enhanced with Personal Photos)
+# PLOTLY CURVE (Direct - No intro, no side images)
 # -----------------------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>📈 Daily Energy Curve</div>", unsafe_allow_html=True)
 
-# Display personal photos based on coffee count
-col_left, col_center, col_right = st.columns([1, 2, 1])
-
-with col_left:
-    # Show sad/tired photo when no coffee or low energy
-    if coffee_count <= 1 and os.path.exists("photo_tired.jpg"):
-        st.image("photo_tired.jpg", caption="Without coffee 😴", use_container_width=True)
-    elif coffee_count <= 1 and os.path.exists("photo_tired.png"):
-        st.image("photo_tired.png", caption="Without coffee 😴", use_container_width=True)
-
-with col_right:
-    # Show happy photo when drinking coffee
-    if coffee_count >= 2 and os.path.exists("photo_happy.jpg"):
-        st.image("photo_happy.jpg", caption="With coffee! 🚀☕", use_container_width=True)
-    elif coffee_count >= 2 and os.path.exists("photo_happy.png"):
-        st.image("photo_happy.png", caption="With coffee! 🚀☕", use_container_width=True)
-
 fig = go.Figure()
 
-# Main energy curve
+# Main energy curve with gradient effect
 fig.add_trace(go.Scatter(
     x=df["Hour"],
     y=df["Energy"],
-    mode="lines+markers",
+    mode="lines+markers+text",
     line=dict(width=4, color='#d4a574', shape='spline'),
     marker=dict(size=12, color='#8b4513', line=dict(width=2, color='#f4e4c1')),
+    text=df["Mood"],
+    textposition="top center",
+    textfont=dict(size=16),
     name="Energy",
     hovertemplate="<b>%{x}</b><br>Energy: %{y}%<extra></extra>"
 ))
-
-# Add images as annotations on key points
-if tired_img_url and happy_img_url:
-    for idx, row in df.iterrows():
-        # Only show images at specific intervals to avoid clutter
-        if idx % 3 == 0 or row["MoodType"] == "happy":
-            img_url = happy_img_url if row["MoodType"] == "happy" else tired_img_url
-            
-            fig.add_layout_image(
-                dict(
-                    source=img_url,
-                    xref="x",
-                    yref="y",
-                    x=row["Hour"],
-                    y=row["Energy"],
-                    sizex=0.8,
-                    sizey=10,
-                    xanchor="center",
-                    yanchor="middle",
-                    layer="above"
-                )
-            )
-else:
-    # Fallback to emojis if images not available
-    fig.add_trace(go.Scatter(
-        x=df["Hour"],
-        y=df["Energy"],
-        mode="text",
-        text=df["Mood"],
-        textposition="top center",
-        textfont=dict(size=16),
-        showlegend=False,
-        hoverinfo="skip"
-    ))
 
 # Highlight coffee moments
 if coffee_hours:
@@ -539,11 +437,6 @@ st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("<div class='author-section'>", unsafe_allow_html=True)
 
 # Try to load profile photo, if it exists
-if os.path.exists("profile.jpg"):
-    st.image("profile.jpg", width=80, use_container_width=False)
-elif os.path.exists("profile.png"):
-    st.image("profile.png", width=80, use_container_width=False)
-
 st.markdown(
     """
     <p class='author-label'>MADE BY</p>
